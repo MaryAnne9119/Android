@@ -553,6 +553,9 @@ class BrowserTabFragment :
     private val daxDialogExperimentOnboardingCta
         get() = binding.includeOnboardingDaxDialogExperiment
 
+    private val focusedView
+        get() = binding.includeFocusedView
+
     private val smoothProgressAnimator by lazy { SmoothProgressAnimator(omnibar.pageLoadingIndicator) }
 
     // Optimization to prevent against excessive work generating WebView previews; an existing job will be cancelled if a new one is launched
@@ -2064,14 +2067,14 @@ class BrowserTabFragment :
     }
 
     private fun configureOmnibarQuickAccessGrid() {
-        configureQuickAccessGridLayout(binding.quickAccessSuggestionsRecyclerView)
+        configureQuickAccessGridLayout(focusedView.quickAccessSuggestionsRecyclerView)
         omnibarQuickAccessAdapter = createQuickAccessAdapter(originPixel = AppPixelName.FAVORITE_OMNIBAR_ITEM_PRESSED) { viewHolder ->
-            binding.quickAccessSuggestionsRecyclerView.enableAnimation()
+            focusedView.quickAccessSuggestionsRecyclerView.enableAnimation()
             omnibarQuickAccessItemTouchHelper.startDrag(viewHolder)
         }
-        omnibarQuickAccessItemTouchHelper = createQuickAccessItemHolder(binding.quickAccessSuggestionsRecyclerView, omnibarQuickAccessAdapter)
-        binding.quickAccessSuggestionsRecyclerView.adapter = omnibarQuickAccessAdapter
-        binding.quickAccessSuggestionsRecyclerView.disableAnimation()
+        omnibarQuickAccessItemTouchHelper = createQuickAccessItemHolder(focusedView.quickAccessSuggestionsRecyclerView, omnibarQuickAccessAdapter)
+        focusedView.quickAccessSuggestionsRecyclerView.adapter = omnibarQuickAccessAdapter
+        focusedView.quickAccessSuggestionsRecyclerView.disableAnimation()
     }
 
     private fun configureHomeTabQuickAccessGrid() {
@@ -2127,7 +2130,6 @@ class BrowserTabFragment :
         val layoutManager = GridLayoutManager(requireContext(), numOfColumns)
         recyclerView.layoutManager = layoutManager
         val sidePadding = gridViewColumnCalculator.calculateSidePadding(QUICK_ACCESS_ITEM_MAX_SIZE_DP, numOfColumns)
-        recyclerView.setPadding(sidePadding, recyclerView.paddingTop, sidePadding, recyclerView.paddingBottom)
     }
 
     private fun configurePrivacyShield() {
@@ -2158,9 +2160,11 @@ class BrowserTabFragment :
                 viewModel.triggerAutocomplete(omnibar.omnibarTextInput.text.toString(), hasFocus, false)
                 if (hasFocus) {
                     cancelPendingAutofillRequestsToChooseCredentials()
+                    omnibar.omniBarContainer.isPressed = true
                 } else {
                     omnibar.omnibarTextInput.hideKeyboard()
                     binding.focusDummy.requestFocus()
+                    omnibar.omniBarContainer.isPressed = false
                 }
             }
 
@@ -2168,6 +2172,7 @@ class BrowserTabFragment :
             override fun onBackKey(): Boolean {
                 omnibar.omnibarTextInput.hideKeyboard()
                 binding.focusDummy.requestFocus()
+                omnibar.omniBarContainer.isPressed = false
                 //  Allow the event to be handled by the next receiver.
                 return false
             }
@@ -2781,7 +2786,7 @@ class BrowserTabFragment :
         }
         renderer.recreateDaxDialogCta()
         configureQuickAccessGridLayout(quickAccessItems.quickAccessRecyclerView)
-        configureQuickAccessGridLayout(binding.quickAccessSuggestionsRecyclerView)
+        configureQuickAccessGridLayout(focusedView.quickAccessSuggestionsRecyclerView)
         decorator.recreatePopupMenu()
         privacyProtectionsPopup.onConfigurationChanged()
         viewModel.onConfigurationChanged()
@@ -3420,16 +3425,16 @@ class BrowserTabFragment :
                 if (viewState.showSuggestions || viewState.showFavorites) {
                     if (viewState.favorites.isNotEmpty() && viewState.showFavorites) {
                         binding.autoCompleteSuggestionsList.gone()
-                        binding.quickAccessSuggestionsRecyclerView.show()
+                        focusedView.rootFocusedView.show()
                         omnibarQuickAccessAdapter.submitList(viewState.favorites)
                     } else {
                         binding.autoCompleteSuggestionsList.show()
-                        binding.quickAccessSuggestionsRecyclerView.gone()
+                        focusedView.rootFocusedView.gone()
                         autoCompleteSuggestionsAdapter.updateData(viewState.searchResults.query, viewState.searchResults.suggestions)
                     }
                 } else {
                     binding.autoCompleteSuggestionsList.gone()
-                    binding.quickAccessSuggestionsRecyclerView.gone()
+                    focusedView.rootFocusedView.gone()
                 }
             }
         }
@@ -3867,6 +3872,11 @@ class BrowserTabFragment :
                 homeBackgroundLogo.hideLogo()
                 quickAccessAdapter.submitList(favorites)
                 quickAccessItems.quickAccessRecyclerView.show()
+                with(quickAccessItems.newTabShortcutBookmarks) {
+                    setClickListener {
+                        browserActivity?.launchBookmarks()
+                    }
+                }
                 viewModel.onNewTabFavouritesShown()
             }
 
