@@ -104,6 +104,9 @@ class AutofillManagementCredentialsMode : DuckDuckGoFragment(R.layout.fragment_a
     @Inject
     lateinit var browserNav: BrowserNav
 
+    @Inject
+    lateinit var stringBuilder: AutofillManagementStringBuilder
+
     // we need to revert the toolbar title when this fragment is destroyed, so will track its initial value
     private var initialActionBarTitle: String? = null
 
@@ -176,9 +179,12 @@ class AutofillManagementCredentialsMode : DuckDuckGoFragment(R.layout.fragment_a
 
     private fun launchDeleteLoginConfirmationDialog() {
         this.context?.let {
+            val title = stringBuilder.stringForDeleteAllPasswordsDialogConfirmationDialogTitle(numberToDelete = 1)
+            val message = stringBuilder.stringForDeleteLoginsConfirmationDialogMessage(numberToDelete = 1)
+
             TextAlertDialogBuilder(it)
-                .setTitle(R.string.autofillDeleteLoginDialogTitle)
-                .setMessage(R.string.credentialManagementDeletePasswordConfirmationMessage)
+                .setTitle(title)
+                .setMessage(message)
                 .setDestructiveButtons(true)
                 .setPositiveButton(R.string.autofillDeleteLoginDialogDelete)
                 .setNegativeButton(R.string.autofillDeleteLoginDialogCancel)

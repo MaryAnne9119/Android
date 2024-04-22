@@ -94,6 +94,9 @@ class AutofillManagementListMode : DuckDuckGoFragment(R.layout.fragment_autofill
     @Inject
     lateinit var deviceAuthenticator: DeviceAuthenticator
 
+    @Inject
+    lateinit var stringBuilder: AutofillManagementStringBuilder
+
     val viewModel by lazy {
         ViewModelProvider(requireActivity(), viewModelFactory)[AutofillSettingsViewModel::class.java]
     }
@@ -319,9 +322,12 @@ class AutofillManagementListMode : DuckDuckGoFragment(R.layout.fragment_autofill
 
     private fun launchDeleteLoginConfirmationDialog(loginCredentials: LoginCredentials) {
         this.context?.let {
+            val title = stringBuilder.stringForDeleteAllPasswordsDialogConfirmationDialogTitle(numberToDelete = 1)
+            val message = stringBuilder.stringForDeleteLoginsConfirmationDialogMessage(numberToDelete = 1)
+
             TextAlertDialogBuilder(it)
-                .setTitle(R.string.autofillDeleteLoginDialogTitle)
-                .setMessage(R.string.credentialManagementDeletePasswordConfirmationMessage)
+                .setTitle(title)
+                .setMessage(message)
                 .setDestructiveButtons(true)
                 .setPositiveButton(R.string.autofillDeleteLoginDialogDelete)
                 .setNegativeButton(R.string.autofillDeleteLoginDialogCancel)
@@ -337,12 +343,13 @@ class AutofillManagementListMode : DuckDuckGoFragment(R.layout.fragment_autofill
     }
 
     private fun launchDeleteAllLoginsConfirmationDialog(numberToDelete: Int) {
-        val displayStrings = getDisplayStringsForDeletingAllLogins(numberToDelete)
+        val dialogTitle = stringBuilder.stringForDeleteAllPasswordsDialogConfirmationDialogTitle(numberToDelete)
+        val dialogMessage = stringBuilder.stringForDeleteLoginsConfirmationDialogMessage(numberToDelete)
 
         this.context?.let {
             TextAlertDialogBuilder(it)
-                .setTitle(displayStrings.first)
-                .setMessage(displayStrings.second)
+                .setTitle(dialogTitle)
+                .setMessage(dialogMessage)
                 .setDestructiveButtons(true)
                 .setPositiveButton(R.string.autofillDeleteLoginDialogDelete)
                 .setNegativeButton(R.string.autofillDeleteLoginDialogCancel)
@@ -355,25 +362,6 @@ class AutofillManagementListMode : DuckDuckGoFragment(R.layout.fragment_autofill
                     },
                 )
                 .show()
-        }
-    }
-
-    /**
-     * Returns a pair of strings for the title and message of the delete all logins confirmation dialog.
-     *
-     * The strings will change depending on if there is only one login to delete or multiple.
-     */
-    private fun getDisplayStringsForDeletingAllLogins(numberToDelete: Int): Pair<String, String> {
-        return if (numberToDelete == 1) {
-            Pair(
-                getString(R.string.autofillDeleteLoginDialogTitle),
-                getString(R.string.credentialManagementDeletePasswordConfirmationMessage),
-            )
-        } else {
-            Pair(
-                resources.getQuantityString(R.plurals.credentialManagementDeleteAllPasswordsConfirmationTitle, numberToDelete, numberToDelete),
-                getString(R.string.credentialManagementDeleteAllPasswordsConfirmationMessage),
-            )
         }
     }
 
