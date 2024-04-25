@@ -23,11 +23,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/rootFocusedView"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="?attr/daxColorSurface"
     android:elevation="2dp"
     android:orientation="vertical"
     android:visibility="gone"
+    android:fillViewport="true"
+    android:clipChildren="false"
     tools:visibility="visible"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     android:paddingTop="15dp">
@@ -45,14 +47,43 @@
         android:id="@+id/quickAccessSuggestionsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/keyline_2"
-        android:layout_marginEnd="@dimen/keyline_2"
         android:clipToPadding="false"
         android:overScrollMode="never"
         tools:itemCount="8"
         tools:listItem="@layout/view_quick_access_item"
         tools:showIn="@layout/activity_system_search"
         tools:spanCount="4" />
+
+    <LinearLayout
+        android:id="@+id/quickAccessRecyclerViewEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/keyline_2"
+        android:layout_marginEnd="@dimen/keyline_2"
+        android:visibility="gone"
+        android:orientation="horizontal">
+
+        <com.duckduckgo.common.ui.view.griditem.DaxNewTabGridItem
+            app:placeholder="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.duckduckgo.common.ui.view.griditem.DaxNewTabGridItem
+            app:placeholder="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.duckduckgo.common.ui.view.griditem.DaxNewTabGridItem
+            app:placeholder="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.duckduckgo.common.ui.view.griditem.DaxNewTabGridItem
+            app:placeholder="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 
     <com.duckduckgo.common.ui.view.text.DaxTextView
         android:layout_width="match_parent"
@@ -64,7 +95,7 @@
         app:textType="primary"
         app:typography="h4" />
 
-    <com.duckduckgo.common.ui.view.DaxNewTabGridItem
+    <com.duckduckgo.common.ui.view.griditem.DaxNewTabGridItem
         android:id="@+id/newTabShortcutBookmarks"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

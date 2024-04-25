@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.duckduckgo.common.ui.view
+package com.duckduckgo.common.ui.view.griditem
 
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import com.duckduckgo.common.ui.view.gone
+import com.duckduckgo.common.ui.view.show
 import com.duckduckgo.common.ui.viewbinding.viewBinding
 import com.duckduckgo.mobile.android.R
 import com.duckduckgo.mobile.android.databinding.ViewGridListItemBinding
@@ -37,7 +39,7 @@ class DaxNewTabGridItem @JvmOverloads constructor(
             attrs,
             R.styleable.DaxNewTabGridItem,
             0,
-           0,
+            0,
         ).apply {
             setPrimaryText(getString(R.styleable.DaxNewTabGridItem_primaryText))
             if (hasValue(R.styleable.DaxNewTabGridItem_leadingIcon)) {
@@ -65,8 +67,8 @@ class DaxNewTabGridItem @JvmOverloads constructor(
     }
 
     /** Sets the item as a placeholder (see https://www.figma.com/file/6Yfag3rmVECFxs9PTYXdIt/New-Tab-page-exploration-(iOS%2FAndroid)?type=design&node-id=590-31843&mode=design&t=s7gAJlxNYHG02uJl-4 */
-    fun setAsPlaceholder(isPlaceholder: Boolean){
-        if (isPlaceholder){
+    fun setAsPlaceholder(isPlaceholder: Boolean) {
+        if (isPlaceholder) {
             binding.quickAccessTitle.gone()
             binding.quickAccessFavicon.gone()
             binding.quickAccessFaviconCard.gone()

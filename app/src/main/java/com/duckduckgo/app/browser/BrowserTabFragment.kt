@@ -613,6 +613,7 @@ class BrowserTabFragment :
 
     private val omnibarInputTextWatcher = object : TextChangedWatcher() {
         override fun afterTextChanged(editable: Editable) {
+            Timber.d("New Tab: triggerAutocomplete afterTextChanged")
             viewModel.onOmnibarInputStateChanged(omnibar.omnibarTextInput.text.toString(), omnibar.omnibarTextInput.hasFocus(), true)
             viewModel.triggerAutocomplete(omnibar.omnibarTextInput.text.toString(), omnibar.omnibarTextInput.hasFocus(), true)
         }
@@ -620,6 +621,7 @@ class BrowserTabFragment :
 
     private val showSuggestionsListener = object : ShowSuggestionsListener {
         override fun showSuggestions() {
+            Timber.d("New Tab: triggerAutocomplete showSuggestions")
             viewModel.triggerAutocomplete(omnibar.omnibarTextInput.text.toString(), omnibar.omnibarTextInput.hasFocus(), true)
         }
     }
@@ -762,8 +764,6 @@ class BrowserTabFragment :
             showDialogHidingPrevious(dialog, CredentialAutofillPickerDialog.TAG, autofillWebMessageRequest.originalPageUrl)
         }
     }
-
-    private val homeBackgroundLogo by lazy { HomeBackgroundLogo(newBrowserTab.ddgLogo) }
 
     private val ctaViewStateObserver = Observer<CtaViewState> {
         it?.let { renderer.renderCtaViewState(it) }
@@ -1246,6 +1246,10 @@ class BrowserTabFragment :
             Timber.d("SSLError: no previous page to load, showing home")
             viewModel.recoverFromSSLWarningPage(false)
         }
+    }
+
+    fun hideFocusedView() {
+        showHome()
     }
 
     fun submitQuery(query: String) {
@@ -2156,6 +2160,7 @@ class BrowserTabFragment :
     private fun configureOmnibarTextInput() {
         omnibar.omnibarTextInput.onFocusChangeListener =
             OnFocusChangeListener { _, hasFocus: Boolean ->
+                Timber.d("New Tab: triggerAutocomplete OnFocusChangeListener")
                 viewModel.onOmnibarInputStateChanged(omnibar.omnibarTextInput.text.toString(), hasFocus, false)
                 viewModel.triggerAutocomplete(omnibar.omnibarTextInput.text.toString(), hasFocus, false)
                 if (hasFocus) {
@@ -2780,7 +2785,6 @@ class BrowserTabFragment :
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
-        newBrowserTab.ddgLogo.setImageResource(com.duckduckgo.mobile.android.R.drawable.logo_full)
         if (newBrowserTab.ctaContainer.isNotEmpty()) {
             renderer.renderHomeCta()
         }
@@ -3421,21 +3425,44 @@ class BrowserTabFragment :
         fun renderAutocomplete(viewState: AutoCompleteViewState) {
             renderIfChanged(viewState, lastSeenAutoCompleteViewState) {
                 lastSeenAutoCompleteViewState = viewState
-
-                if (viewState.showSuggestions || viewState.showFavorites) {
-                    if (viewState.favorites.isNotEmpty() && viewState.showFavorites) {
-                        binding.autoCompleteSuggestionsList.gone()
-                        focusedView.rootFocusedView.show()
-                        omnibarQuickAccessAdapter.submitList(viewState.favorites)
+                Timber.d(
+                    "New Tab: showSuggestions ${viewState.showSuggestions} showFavorites ${viewState.showFavorites} empty favourites ${viewState.favorites.isEmpty()}",
+                )
+                if (viewState.showSuggestions) {
+                    binding.autoCompleteSuggestionsList.show()
+                    focusedView.rootFocusedView.gone()
+                    autoCompleteSuggestionsAdapter.updateData(viewState.searchResults.query, viewState.searchResults.suggestions)
+                } else if (viewState.showFavorites) {
+                    focusedView.rootFocusedView.show()
+                    // consume clicks so the view is not hidden after losing focus
+                    focusedView.rootFocusedView.setOnClickListener { }
+                    if (viewState.favorites.isEmpty()) {
+                        focusedView.quickAccessRecyclerViewEmpty.show()
+                        focusedView.quickAccessSuggestionsRecyclerView.gone()
                     } else {
-                        binding.autoCompleteSuggestionsList.show()
-                        focusedView.rootFocusedView.gone()
-                        autoCompleteSuggestionsAdapter.updateData(viewState.searchResults.query, viewState.searchResults.suggestions)
+                        focusedView.quickAccessRecyclerViewEmpty.gone()
+                        focusedView.quickAccessSuggestionsRecyclerView.show()
+                        omnibarQuickAccessAdapter.submitList(viewState.favorites)
                     }
                 } else {
                     binding.autoCompleteSuggestionsList.gone()
                     focusedView.rootFocusedView.gone()
                 }
+                // if (viewState.showSuggestions || viewState.showFavorites) {
+                //     if (viewState.showFavorites) {
+                //         binding.autoCompleteSuggestionsList.gone()
+                //         focusedView.rootFocusedView.show()
+                //         omnibarQuickAccessAdapter.submitList(viewState.favorites)
+                //     } else {
+                //         binding.autoCompleteSuggestionsList.show()
+                //         focusedView.rootFocusedView.gone()
+                //         autoCompleteSuggestionsAdapter.updateData(viewState.searchResults.query, viewState.searchResults.suggestions)
+                //     }
+                // } else {
+                //
+                //     binding.autoCompleteSuggestionsList.gone()
+                //     focusedView.rootFocusedView.gone()
+                // }
             }
         }
 
@@ -3693,7 +3720,7 @@ class BrowserTabFragment :
 
                     viewState.message != null -> {
                         showRemoteMessage(viewState.message, newMessage)
-                        showHomeBackground(viewState.favorites, hideLogo = true)
+                        showHomeBackground(viewState.favorites)
                         hideHomeCta()
                     }
 
@@ -3861,16 +3888,13 @@ class BrowserTabFragment :
             viewModel.onCtaShown()
         }
 
-        private fun showHomeBackground(
-            favorites: List<QuickAccessFavorite>,
-            hideLogo: Boolean = false,
-        ) {
+        private fun showHomeBackground(favorites: List<QuickAccessFavorite>) {
             if (favorites.isEmpty()) {
-                if (hideLogo) homeBackgroundLogo.hideLogo() else homeBackgroundLogo.showLogo()
                 quickAccessItems.quickAccessRecyclerView.gone()
+                quickAccessItems.quickAccessRecyclerViewEmpty.show()
             } else {
-                homeBackgroundLogo.hideLogo()
                 quickAccessAdapter.submitList(favorites)
+                quickAccessItems.quickAccessRecyclerViewEmpty.gone()
                 quickAccessItems.quickAccessRecyclerView.show()
                 with(quickAccessItems.newTabShortcutBookmarks) {
                     setClickListener {
@@ -3884,7 +3908,6 @@ class BrowserTabFragment :
         }
 
         private fun hideHomeBackground() {
-            homeBackgroundLogo.hideLogo()
             newBrowserTab.newTabQuickAccessItemsLayout.gone()
         }
 

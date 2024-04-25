@@ -65,7 +65,7 @@
         android:id="@+id/gridItemPlaceholder"
         android:layout_width="@dimen/gridItemImageSize"
         android:layout_height="@dimen/gridItemImageSize"
-        android:background="@drawable/omnibar_field_background"
+        android:background="@drawable/background_dashed_outline"
         android:visibility="gone"
         tools:visibility="visible"/>
 

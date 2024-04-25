@@ -458,6 +458,7 @@ class BrowserTabViewModel @Inject constructor(
             .flowOn(dispatchers.io())
             .onEach { filteredFavourites ->
                 withContext(dispatchers.main()) {
+                    Timber.d("New Tab: filteredFavourites")
                     val favorites = filteredFavourites.map { FavoritesQuickAccessAdapter.QuickAccessFavorite(it) }
                     ctaViewState.value = currentCtaViewState().copy(favorites = favorites)
                     autoCompleteViewState.value = currentAutoCompleteViewState().copy(favorites = favorites)
@@ -606,6 +607,7 @@ class BrowserTabViewModel @Inject constructor(
 
     private fun onAutoCompleteResultReceived(result: AutoCompleteResult) {
         val currentViewState = currentAutoCompleteViewState()
+        Timber.d("New Tab: onAutoCompleteResultReceived")
         autoCompleteViewState.value = currentViewState.copy(searchResults = AutoCompleteResult(result.query, result.suggestions))
     }
 
@@ -806,6 +808,7 @@ class BrowserTabViewModel @Inject constructor(
             browserError = OMITTED,
             sslError = NONE,
         )
+        Timber.d("New Tab: onUserSubmittedQuery")
         autoCompleteViewState.value =
             currentAutoCompleteViewState().copy(showSuggestions = false, showFavorites = false, searchResults = AutoCompleteResult("", emptyList()))
     }
@@ -963,6 +966,7 @@ class BrowserTabViewModel @Inject constructor(
      * @return true if navigation handled, otherwise false
      */
     fun onUserPressedBack(): Boolean {
+        Timber.d("New Tab: onUserPressedBack")
         navigationAwareLoginDetector.onEvent(NavigationEvent.UserAction.NavigateBack)
         val navigation = webNavigationState ?: return false
         val hasSourceTab = tabRepository.liveSelectedTab.value?.sourceTabId != null
@@ -978,10 +982,18 @@ class BrowserTabViewModel @Inject constructor(
         }
 
         if (!currentBrowserViewState().browserShowing) {
+            Timber.d("New Tab: onUserPressedBack browser not showing")
             return false
         }
 
+        if (currentAutoCompleteViewState().showSuggestions) {
+            Timber.d("New Tab: onUserPressedBack focused view showing")
+            autoCompleteViewState.value = currentAutoCompleteViewState().copy(showFavorites = false, showSuggestions = false)
+            return true
+        }
+
         if (navigation.canGoBack) {
+            Timber.d("New Tab: onUserPressedBack navigation can go back")
             command.value = NavigationCommand.NavigateBack(navigation.stepsToPreviousPage)
             return true
         } else if (hasSourceTab) {
@@ -990,6 +1002,7 @@ class BrowserTabViewModel @Inject constructor(
             }
             return true
         } else if (!skipHome) {
+            Timber.d("New Tab: onUserPressedBack navigate home")
             navigateHome()
             command.value = ShowKeyboard
             return true
@@ -1799,6 +1812,10 @@ class BrowserTabViewModel @Inject constructor(
         hasFocus: Boolean,
         hasQueryChanged: Boolean,
     ) {
+        // business logic
+        // if omnibar focused and query is not blank and suggestions enabled -> show autocomplete suggestions
+        //
+
         // determine if empty list to be shown, or existing search results
         val autoCompleteSearchResults = if (query.isBlank() || !hasFocus) {
             AutoCompleteResult(query, emptyList())
@@ -1811,12 +1828,13 @@ class BrowserTabViewModel @Inject constructor(
         val showFavoritesAsSuggestions = if (!showAutoCompleteSuggestions) {
             val urlFocused = hasFocus && query.isNotBlank() && !hasQueryChanged && UriString.isWebUrl(query)
             val emptyQueryBrowsing = query.isBlank() && currentBrowserViewState().browserShowing
-            val favoritesAvailable = currentAutoCompleteViewState().favorites.isNotEmpty()
-            hasFocus && (urlFocused || emptyQueryBrowsing) && favoritesAvailable
+            // val favoritesAvailable = currentAutoCompleteViewState().favorites.isNotEmpty()
+            hasFocus && (urlFocused || emptyQueryBrowsing)
         } else {
             false
         }
 
+        Timber.d("New Tab: triggerAutocomplete hasFocus $hasFocus")
         autoCompleteViewState.value = currentAutoCompleteViewState()
             .copy(
                 showSuggestions = showAutoCompleteSuggestions,
@@ -1824,7 +1842,7 @@ class BrowserTabViewModel @Inject constructor(
                 searchResults = autoCompleteSearchResults,
             )
 
-        if (hasFocus && autoCompleteSuggestionsEnabled) {
+        if (showAutoCompleteSuggestions) {
             autoCompletePublishSubject.accept(query.trim())
         }
     }
@@ -2258,6 +2276,7 @@ class BrowserTabViewModel @Inject constructor(
     }
 
     private fun initializeDefaultViewStates() {
+        Timber.d("New Tab: initialize default values")
         globalLayoutState.value = Browser()
         browserViewState.value = BrowserViewState()
         loadingViewState.value = LoadingViewState()
